@@ -29,9 +29,32 @@ require([
 
     var ItemView = Backbone.View.extend({
         tagName: 'li',
+        events: {
+            'click span.swap': 'swap',
+            'click span.remove': 'remove'
+        },
+        initialize: function() {
+            _.bindAll(this, 'render', 'unrender', 'swap', 'remove'); // every function that uses 'this' as the current object should be in here
+
+            this.model.bind('change', this.render);
+            this.model.bind('remove', this.unrender);
+        },
         render: function() {
-            $(this.el).html('<span class="part1">'+this.model.get('part1') + '</span> <span class="part2">' + this.model.get('part2') + '</span>');
+            $(this.el).html('<span class="part1">' + this.model.get('part1') + '</span> <span class="part2">' + this.model.get('part2') + '</span> <span class="swap">swap</span> <span class="remove">[-]</span>');
             return this;
+        },
+        swap: function() {
+            var swapped = {
+                part1: this.model.get('part2'),
+                part2: this.model.get('part1')
+            }
+            this.model.set(swapped);
+        },
+        remove: function(){
+            this.model.destroy();
+        },
+        unrender: function(){
+            $(this.el).remove();
         }
     });
 
@@ -41,13 +64,18 @@ require([
             'click button#add': 'addItem'
         },
     	initialize: function() {
+            _.bindAll(this, 'render', 'addItem', 'appendItem', 'countModels');
             this.collection = new List();
             this.collection.bind('add', this.appendItem);
+            this.collection.bind('add', this.countModels);
+            this.collection.bind('remove', this.countModels);
             this.counter = 0;
     		this.render();
     	},
     	render: function () {
             $(this.el).prepend("<button id='add'>Add list item</button>");
+            $(this.el).prepend("<div id=\"counter\" style=\"float: right\">Collection length: <span></span></div>");
+            this.countModels();
     	},
         addItem: function() {
             this.counter++;
@@ -64,19 +92,11 @@ require([
                 model: item
             });
             $('ul#items', this.el).append(itemView.render().el);
+        }, 
+        countModels: function() {
+            $('#counter span').html(this.collection.length);
         }
     });
-
-    // var ob = {
-    //     super: $('#test'),
-    //     makeSth: function() {
-    //         $('#test').html('append!');
-    //         this.super.html('append2');
-    //         console.log(this.super.html());
-    //     }
-    // };
-
-    // ob.makeSth();
     
     var listView = new ListView();
     
